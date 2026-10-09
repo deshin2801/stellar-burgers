@@ -1,22 +1,29 @@
-import { OrderCardUI } from '@ui';
 import { memo, useMemo } from 'react';
+import type { FC } from 'react'
 import { useLocation } from 'react-router-dom';
 
 import type { OrderCardProps } from './type';
 import type { TIngredient } from '@utils-types';
+import { OrderCardUI } from '../ui/order-card';
+import { useAppSelector } from '../../services/store';
+import {
+  selectIngredients,
+  selectIngredientsIsLoading,
+  selectIngredientsError
+} from '../../services/slices/ingredientsSlice';
 
 const maxIngredients = 6;
 
-export const OrderCard = memo(function OrderCard({
-  order,
-}: OrderCardProps): React.JSX.Element | null {
+export const OrderCard: FC<OrderCardProps> = memo(({ order }) => {
   const location = useLocation();
 
-  // TODO: Взять переменную из стора
-  const ingredients: TIngredient[] = [];
-
+  const ingredients = useAppSelector(selectIngredients);
+  const isIngredientsLoading = useAppSelector(selectIngredientsIsLoading);
+  const ingredientsError = useAppSelector(selectIngredientsError);
   const orderInfo = useMemo(() => {
-    if (!ingredients.length) return null;
+    if (isIngredientsLoading || !ingredients.length) {
+      return null;
+    }
 
     const ingredientsInfo = order.ingredients.reduce(
       (acc: TIngredient[], item: string) => {
@@ -29,25 +36,27 @@ export const OrderCard = memo(function OrderCard({
 
     const total = ingredientsInfo.reduce((acc, item) => acc + item.price, 0);
 
-    const ingredientsToShow = ingredientsInfo.slice(0, maxIngredients);
-
-    const remains =
-      ingredientsInfo.length > maxIngredients
-        ? ingredientsInfo.length - maxIngredients
-        : 0;
-
-    const date = new Date(order.createdAt);
     return {
       ...order,
       ingredientsInfo,
-      ingredientsToShow,
-      remains,
+      ingredientsToShow: ingredientsInfo.slice(0, maxIngredients),
+      remains: Math.max(ingredientsInfo.length - maxIngredients, 0),
       total,
-      date,
+      date: new Date(order.createdAt)
     };
-  }, [order, ingredients]);
+  }, [order, ingredients, isIngredientsLoading]);
 
-  if (!orderInfo) return null;
+  if (isIngredientsLoading) {
+    return <div>Загрузка ингредиентов...</div>;
+  }
+
+  if (ingredientsError) {
+    return <div>{ingredientsError}</div>;
+  }
+
+  if (!orderInfo) {
+    return <div>Не удалось сформировать заказ</div>;
+  }
 
   return (
     <OrderCardUI
