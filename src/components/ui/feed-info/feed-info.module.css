@@ -9,6 +9,13 @@
   min-width: 50%;
 }
 
+.page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+
 .list {
   display: flex;
   flex-flow: column wrap;
