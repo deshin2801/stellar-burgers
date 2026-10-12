@@ -1,13 +1,13 @@
+import type { FC } from 'react';
+import styles from './profile-menu.module.css';
 import { NavLink } from 'react-router-dom';
-
 import type { ProfileMenuUIProps } from './type';
 
-import styles from './profile-menu.module.css';
-
-export const ProfileMenuUI = ({
+export const ProfileMenuUI: FC<ProfileMenuUIProps> = ({
   pathname,
   handleLogout,
-}: ProfileMenuUIProps): React.JSX.Element => (
+  logoutError
+}) => (
   <>
     <NavLink
       to={'/profile'}
@@ -31,12 +31,17 @@ export const ProfileMenuUI = ({
       История заказов
     </NavLink>
     <button
+      type='button'
       className={`text text_type_main-medium text_color_inactive pt-4 pb-4 ${styles.button}`}
       onClick={handleLogout}
     >
       Выход
     </button>
-    <p className="pt-20 text text_type_main-default text_color_inactive">
+
+    {logoutError && (
+      <p className='text text_type_main-default'>{logoutError}</p>
+    )}
+    <p className='pt-20 text text_type_main-default text_color_inactive'>
       {pathname === '/profile'
         ? 'В этом разделе вы можете изменить свои персональные данные'
         : 'В этом разделе вы можете просмотреть свою историю заказов'}
