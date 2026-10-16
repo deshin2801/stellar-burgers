@@ -1,8 +1,7 @@
+import type { FC } from 'react';
 import { AppHeaderUI } from '@ui';
+import type { TAppHeaderUIProps } from '../ui/app-header/type';
 
-export const AppHeader = (): React.JSX.Element => {
-  /* TODO: Получите имя пользователя из хранилища */
-  const userName = '';
-
-  return <AppHeaderUI userName={userName} />;
-};
+export const AppHeader: FC<TAppHeaderUIProps> = ({ userName }) => (
+  <AppHeaderUI userName={userName} />
+);

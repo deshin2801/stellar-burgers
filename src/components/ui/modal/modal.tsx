@@ -2,7 +2,7 @@ import { CloseIcon } from '@krgaa/react-developer-burger-ui-components';
 import { ModalOverlayUI } from '@ui';
 import { memo } from 'react';
 
-import type { TModalUIProps } from './type';
+import type { TModalProps } from './type';
 
 import styles from './modal.module.css';
 
@@ -10,7 +10,7 @@ export const ModalUI = memo(function ModalUI({
   title,
   onClose,
   children,
-}: TModalUIProps): React.JSX.Element {
+}: TModalProps): React.JSX.Element {
   return (
     <>
       <div className={styles.modal}>

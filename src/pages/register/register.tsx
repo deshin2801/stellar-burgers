@@ -1,18 +1,39 @@
+import {  useState } from 'react';
+import type { FC, SyntheticEvent} from 'react'
 import { RegisterUI } from '@ui-pages';
-import { type SyntheticEvent, useState } from 'react';
+import { useAppDispatch, useAppSelector } from '../../services/store';
+import {
+  registerUser,
+  selectUserError,
+  selectUserIsRequested
+} from '../../services/slices/userSlice';
 
-export const Register = (): React.JSX.Element => {
+export const Register: FC = () => {
+  const dispatch = useAppDispatch();
   const [userName, setUserName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const error = useAppSelector(selectUserError);
+  const isRequested = useAppSelector(selectUserIsRequested);
 
-  const handleSubmit = (e: SyntheticEvent): void => {
+  const handleSubmit = (e: SyntheticEvent) => {
     e.preventDefault();
+
+    if (isRequested) {
+      return;
+    }
+    dispatch(
+      registerUser({
+        name: userName,
+        email,
+        password
+      })
+    );
   };
 
   return (
     <RegisterUI
-      errorText=""
+      errorText={error || undefined}
       email={email}
       userName={userName}
       password={password}
