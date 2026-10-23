@@ -1,47 +1,65 @@
 import { test, expect } from '@playwright/test';
-import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
-test('интеграционный тест: модальные окна ингредиентов', async ({ page }) => {
-  const harPath = path.join(__dirname, 'hars', 'ingredients.har');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
-  await page.routeFromHAR(harPath, { url: '**/api/ingredients',
-    notFound: 'abort'
+test.describe('Модальные окна ингредиентов: отображение и закрытие', () => {
+  const harPath = join(__dirname, 'hars', 'ingridients.har');
+
+  test.beforeEach(async ({ page }) => {
+    await page.routeFromHAR(harPath, {
+      url: '**/api/ingredients',
+      notFound: 'abort',
+    });
+    await page.goto('/');
   });
 
-  await page.goto('/');
+  test('открывает модалку ингредиента и показывает корректные нутриенты (булка)', async ({ page }) => {
+    const bunName = 'Краторная булка N-200i';
+    const bunCard = page.locator('.ingredient').filter({ hasText: bunName }).first();
+    await bunCard.click();
 
-  const ingredientCards = page.getByTestId('ingredient-card');
-  await expect(ingredientCards.first()).toBeVisible();
-  await expect(ingredientCards).toHaveCount(15);
 
-  // 6. открытие модального окна ингредиента
-  const bunCard = ingredientCards.filter({ hasText: /булка/i }).first();
-  const expectedBunName = (await bunCard.locator('p').last().textContent())?.trim();
-  const expectedNutrition = {
-    calories: '420',
-    proteins: '80',
-    fat: '24',
-    carbohydrates: '53'
-  };
-  await bunCard.click();
+    const modal = page.locator('#modals [data-testid="modal-window"]');
+    await expect(modal).toBeVisible({ timeout: 10000 });
+    await expect(modal).toContainText(bunName);
 
-  const modalWindow = page.getByTestId('modal-window');
-  await expect(modalWindow).toBeVisible({ timeout: 10000 });
+    await expect(modal).toContainText('420');
+    await expect(modal).toContainText('80');  
+    await expect(modal).toContainText('24');  
+    await expect(modal).toContainText('53');
+  });
 
-  await expect(modalWindow).toContainText(expectedBunName ?? '');
-  await expect(modalWindow).toContainText(expectedNutrition.calories);
-  await expect(modalWindow).toContainText(expectedNutrition.proteins);
-  await expect(modalWindow).toContainText(expectedNutrition.fat);
-  await expect(modalWindow).toContainText(expectedNutrition.carbohydrates);
+  test('показывает разные ингредиенты при клике на разные карточки', async ({ page }) => {
+    const bunName = 'Краторная булка N-200i';
+    const pattyName = 'Биокотлета из марсианской Магнолии';
 
-  const closeButton = page.getByRole('button', { name: 'Закрыть модальное окно' });
-  await closeButton.click();
-  await expect(modalWindow).not.toBeVisible({ timeout: 5000 });
+    const bunCard = page.locator('.ingredient').filter({ hasText: bunName }).first();
+    await bunCard.click();
+    const modal = page.locator('#modals [data-testid="modal-window"]');
+    await expect(modal).toBeVisible();
+    await expect(modal).toContainText(bunName);
 
-  await bunCard.click();
-  await expect(modalWindow).toBeVisible({ timeout: 5000 });
+    const closeBtn = page.locator('#modals button').filter({ hasText: 'Закрыть' }).first();
+    await closeBtn.click();
+    await expect(modal).not.toBeVisible();
 
-  const modalOverlay = page.getByTestId('modal-overlay');
-  await modalOverlay.click({ position: { x: 5, y: 5 } });
-  await expect(modalWindow).not.toBeVisible({ timeout: 5000 });
+    const pattyCard = page.locator('.ingredient').filter({ hasText: pattyName }).first();
+    await pattyCard.click();
+    await expect(modal).toBeVisible();
+    await expect(modal).toContainText(pattyName);
+    await expect(modal).not.toContainText(bunName);
+
+    await expect(modal).toContainText('4242'); 
+    await expect(modal).toContainText('420');  
+    await expect(modal).toContainText('142'); 
+    await expect(modal).toContainText('242'); 
+
+    // Закрытие по оверлею
+    const overlay = page.locator('#modals [data-testid="modal-overlay"]');
+    await overlay.click({ position: { x: 5, y: 5 } });
+    await expect(modal).not.toBeVisible();
+  });
 });

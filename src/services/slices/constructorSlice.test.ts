@@ -5,17 +5,20 @@ import constructorReducer, {
   removeConstructorItemsAll,
   moveUpConstructorItems,
   moveDownConstructorItems,
-  initialState,
   IConstructorState
 } from './constructorSlice';
 
 describe('constructorSlice reducer', () => {
-  const defaultInitialState: IConstructorState = initialState;
+  const expectedInitialState: IConstructorState = {
+    bun: null,
+    constructorItems: [],
+    maxId: 0
+  };
 
   it('должен вернуть состояние по умолчанию при неизвестном экшене', () => {
     const action = { type: 'UNKNOWN_ACTION_TYPE' };
     const result = constructorReducer(undefined, action);
-    expect(result).toEqual(defaultInitialState);
+    expect(result).toEqual(expectedInitialState);
   });
 
   it('должен корректно добавлять ингредиент в сборку', () => {
@@ -34,7 +37,7 @@ describe('constructorSlice reducer', () => {
     };
 
     const result = constructorReducer(
-      defaultInitialState,
+      expectedInitialState,
       addConstructorItems(ingredient)
     );
 
@@ -59,7 +62,7 @@ describe('constructorSlice reducer', () => {
     };
 
     const result = constructorReducer(
-      defaultInitialState,
+      expectedInitialState,
       addConstructorItems(bunIngredient)
     );
 
@@ -104,10 +107,8 @@ describe('constructorSlice reducer', () => {
       maxId: 2
     };
 
-    const result = constructorReducer(
-      state,
-      removeConstructorItems('test-id-1')
-    );
+    const result = constructorReducer(state, removeConstructorItems('test-id-1'));
+
     expect(result.constructorItems).toHaveLength(1);
     expect(result.constructorItems[0].name).toBe('Сыр');
   });
@@ -148,6 +149,7 @@ describe('constructorSlice reducer', () => {
     };
 
     const result = constructorReducer(state, removeConstructorItemsAll());
+
     expect(result.bun).toBeNull();
     expect(result.constructorItems).toEqual([]);
   });
@@ -202,10 +204,7 @@ describe('constructorSlice reducer', () => {
       maxId: 3
     };
 
-    const result = constructorReducer(
-      state,
-      moveUpConstructorItems('test-id-2')
-    );
+    const result = constructorReducer(state, moveUpConstructorItems('test-id-2'));
 
     expect(result.constructorItems[0].name).toBe('Сыр');
     expect(result.constructorItems[1].name).toBe('Котлета');
@@ -262,10 +261,7 @@ describe('constructorSlice reducer', () => {
       maxId: 3
     };
 
-    const result = constructorReducer(
-      state,
-      moveDownConstructorItems('test-id-2')
-    );
+    const result = constructorReducer(state, moveDownConstructorItems('test-id-2'));
 
     expect(result.constructorItems[0].name).toBe('Котлета');
     expect(result.constructorItems[1].name).toBe('Помидор');

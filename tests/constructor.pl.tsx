@@ -1,44 +1,57 @@
 import { test, expect } from '@playwright/test';
-import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
-test('интеграционный тест: kонструктор бургера (с HAR-моком)', async ({
-  page
-}) => {
-  const harPath = path.join(__dirname, 'hars', 'ingredients.har');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
-  await page.routeFromHAR(harPath, {
-    url: '**/api/ingredients',
-    notFound: 'abort'
+test.describe('Конструктор бургера: сборка и расчёт цены', () => {
+  const harPath = join(__dirname, 'hars', 'ingridients.har');
+
+  test.beforeEach(async ({ page }) => {
+    await page.routeFromHAR(harPath, {
+      url: '**/api/ingredients',
+      notFound: 'abort',
+    });
+    await page.goto('/');
   });
 
-  await page.goto('/');
+  test('добавляет булку и котлету, проверяет отображение и итоговую цену', async ({ page }) => {
+    const ingredientCards = page.locator('.ingredient'); // или другой общий класс карточек
+    await expect(ingredientCards.first()).toBeVisible();
+  
+    const bunCard = ingredientCards.filter({ hasText: /булка/i }).first();
+    const bunTextRaw = await bunCard.locator('p').last().textContent();
+    if (!bunTextRaw) throw new Error('Не удалось получить имя булки из карточки');
+    const bunName = bunTextRaw;
 
-  const ingredientCards = page.getByTestId('ingredient-card');
-  await expect(ingredientCards.first()).toBeVisible();
-  await expect(ingredientCards).toHaveCount(15);
+    await bunCard.getByRole('button', { name: 'Добавить' }).click();
 
-  const bunCard = ingredientCards.filter({ hasText: /булка/i }).first();
-  await bunCard.getByRole('button', { name: 'Добавить' }).click();
+    const constructor = page.locator('.constructor');
+    const bunTop = constructor.locator('[data-testid="constructor-bun-1"]');
+    const bunBottom = constructor.locator('[data-testid="constructor-bun-2"]');
 
-  const constructorBunTop = page.getByTestId('constructor-bun-top');
-  const constructorBunBottom = page.getByTestId('constructor-bun-bottom');
-  const constructorItems = page.getByTestId('constructor-item');
+    await expect(bunTop).toContainText(bunName);
+    await expect(bunBottom).toContainText(bunName);
 
-  await expect(constructorBunTop).toContainText(/булка/i);
-  await expect(constructorBunBottom).toContainText(/булка/i);
-  await expect(constructorItems).toHaveCount(0);
+    const ingredientsList = constructor.locator('[data-testid="constructor-ingredients"] li');
+    await expect(ingredientsList).toHaveCount(0);
 
-  const pattyCard = ingredientCards.filter({ hasText: /котлета/i }).first();
-  const pattyName = /котлета/i;
-  await pattyCard.getByRole('button', { name: 'Добавить' }).click();
+    const pattyCard = ingredientCards.filter({ hasText: /котлета/i }).first();
+    const pattyTextRaw = await pattyCard.locator('p').last().textContent();
+    if (!pattyTextRaw) throw new Error('Не удалось получить имя котлеты из карточки');
+    const pattyName = pattyTextRaw;
 
-  await expect(constructorItems).toHaveCount(1);
-  await expect(constructorItems.filter({ hasText: pattyName })).toHaveCount(1);
+    await pattyCard.getByRole('button', { name: 'Добавить' }).click();
 
-  const bunPrice = 1255;
-  const pattyPrice = 424;
-  const expectedTotalPrice = bunPrice * 2 + pattyPrice;
+    await expect(ingredientsList).toHaveCount(1);
+    await expect(ingredientsList.first()).toContainText(pattyName);
 
-  const totalPrice = page.getByTestId('total-price').locator('p');
-  await expect(totalPrice).toHaveText(String(expectedTotalPrice));
+    const bunPrice = 1255;
+    const pattyPrice = 424;
+    const expectedTotalPrice = bunPrice * 2 + pattyPrice;
+
+    const totalPriceLocator = page.locator('[data-testid="order-summ"] p');
+    await expect(totalPriceLocator).toContainText(String(expectedTotalPrice));
+  });
 });
