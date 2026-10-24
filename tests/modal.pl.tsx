@@ -6,11 +6,17 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 test.describe('Модальные окна ингредиентов: открытие по ссылке и закрытие', () => {
-  const harPath = join(__dirname, 'hars', 'ingridients.har');
+  const ingredientsHarPath = join(__dirname, 'hars', 'ingridients.har');
+  const usersHarPath = join(__dirname, 'hars', 'users.har');
 
   test.beforeEach(async ({ page }) => {
-    await page.routeFromHAR(harPath, {
+    await page.routeFromHAR(ingredientsHarPath, {
       url: '**/api/ingredients',
+      notFound: 'abort',
+    });
+
+    await page.routeFromHAR(usersHarPath, {
+      url: 'https://norma.ffapi.ru/api/auth/user',
       notFound: 'abort',
     });
 

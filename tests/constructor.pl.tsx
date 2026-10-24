@@ -6,14 +6,21 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 test.describe('Конструктор бургера: сборка и расчёт цены', () => {
-  const harPath = join(__dirname, 'hars', 'ingridients.har');
+  const ingredientsHarPath = join(__dirname, 'hars', 'ingridients.har');
+  const usersHarPath = join(__dirname, 'hars', 'users.har');
 
   test.beforeEach(async ({ page }) => {
-    await page.routeFromHAR(harPath, {
+    await page.routeFromHAR(ingredientsHarPath, {
       url: '**/api/ingredients',
       notFound: 'abort',
     });
 
+    await page.routeFromHAR(usersHarPath, {
+      url: 'https://norma.ffapi.ru/api/auth/user',
+      notFound: 'abort',
+    });
+
+    // Cookie для accessToken
     await page.context().addCookies([
       {
         name: 'accessToken',
@@ -64,7 +71,6 @@ test.describe('Конструктор бургера: сборка и расчё
     await expect(ingredientsItems.first()).toContainText(pattyName);
     await expect(fillingList.getByText('Выберите начинку', { exact: true })).not.toBeVisible();
 
-    // Проверка цены
     const bunPrice = 1255;
     const pattyPrice = 424;
     const expectedTotalPrice = bunPrice * 2 + pattyPrice;

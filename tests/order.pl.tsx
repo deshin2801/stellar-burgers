@@ -5,12 +5,24 @@ import { dirname, join } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-test.describe('Модальные окна ингредиентов: открытие по ссылке и закрытие', () => {
-  const harPath = join(__dirname, 'hars', 'ingridients.har');
+test.describe('Поток заказа: сборка, оформление и очистка конструктора', () => {
+  const ingredientsHarPath = join(__dirname, 'hars', 'ingridients.har');
+  const usersHarPath = join(__dirname, 'hars', 'users.har');
+  const orderHarPath = join(__dirname, 'hars', 'order.har');
 
   test.beforeEach(async ({ page }) => {
-    await page.routeFromHAR(harPath, {
+    await page.routeFromHAR(ingredientsHarPath, {
       url: '**/api/ingredients',
+      notFound: 'abort',
+    });
+
+    await page.routeFromHAR(usersHarPath, {
+      url: 'https://norma.ffapi.ru/api/auth/user',
+      notFound: 'abort',
+    });
+
+    await page.routeFromHAR(orderHarPath, {
+      url: 'https://norma.ffapi.ru/api/orders',
       notFound: 'abort',
     });
 
@@ -29,68 +41,46 @@ test.describe('Модальные окна ингредиентов: откры�
     await page.goto('/');
   });
 
-  test('открывает модалку по ссылке в карточке и проверяет нутриенты (булка)', async ({ page }) => {
+  test('создаёт заказ и очищает конструктор', async ({ page }) => {
     const bunName = 'Краторная булка N-200i';
+    const pattyName = 'Биокотлета из марсианской Магнолии';
 
-    const ingredientsList = page.getByTestId('ingredients-content').locator('li');
-    const bunCard = ingredientsList.filter({
-      has: page.getByText(bunName, { exact: true }),
-    });
+    const cards = page.getByTestId('ingredients-content').locator('li');
 
-    await bunCard.getByRole('link').click();
+    for (const name of [bunName, pattyName]) {
+      const card = cards.filter({ has: page.getByText(name, { exact: true }) });
+      await card.getByRole('button', { name: 'Добавить', exact: true }).click();
+    }
+
+    const constructor = page.getByTestId('constructor');
+
+    await expect(constructor.getByTestId('constructor-bun-1')).toContainText(bunName);
+    await expect(constructor.getByTestId('constructor-ingredients')).toContainText(pattyName);
+
+    const orderButton = constructor.getByRole('button', { name: 'Оформить заказ', exact: true });
+    await expect(orderButton).toBeEnabled();
+    await orderButton.click();
 
     const modal = page.locator('#modals > div').filter({
       has: page.getByRole('button', { name: 'Закрыть', exact: true }),
     });
     await expect(modal).toBeVisible({ timeout: 10000 });
 
-    await expect(modal.getByRole('heading', { name: bunName, exact: true })).toBeVisible();
-    await expect(modal).toContainText('420');
-    await expect(modal).toContainText('80');
-    await expect(modal).toContainText('24');
-    await expect(modal).toContainText('53');
+    const orderNumber = modal.getByTestId('order-number');
+    await expect(orderNumber).toHaveText('99999');
+
+    await expect(constructor.getByTestId('constructor-bun-1')).toHaveCount(0);
+    await expect(constructor.getByTestId('constructor-bun-2')).toHaveCount(0);
+
+    await expect(constructor.getByText('Выберите булки', { exact: true })).toHaveCount(2);
+
+    const fillings = constructor.getByTestId('constructor-ingredients');
+    await expect(fillings.getByText('Выберите начинку', { exact: true })).toBeVisible();
+    await expect(fillings.locator('li')).toHaveCount(1);
+    await expect(fillings.getByText(pattyName, { exact: true })).toHaveCount(0);
 
     await modal.getByRole('button', { name: 'Закрыть', exact: true }).click();
-    await expect(modal).not.toBeVisible();
-  });
 
-  test('показывает разные ингредиенты при открытии по ссылкам и корректно закрывается', async ({ page }) => {
-    const bunName = 'Краторная булка N-200i';
-    const pattyName = 'Биокотлета из марсианской Магнолии';
-
-    const ingredientsList = page.getByTestId('ingredients-content').locator('li');
-
-    // Булка
-    const bunCard = ingredientsList.filter({
-      has: page.getByText(bunName, { exact: true }),
-    });
-    await bunCard.getByRole('link').click();
-
-    const modal = page.locator('#modals > div').filter({
-      has: page.getByRole('button', { name: 'Закрыть', exact: true }),
-    });
-    await expect(modal).toBeVisible();
-    await expect(modal.getByRole('heading', { name: bunName, exact: true })).toBeVisible();
-
-    await modal.getByRole('button', { name: 'Закрыть', exact: true }).click();
-    await expect(modal).not.toBeVisible();
-
-    // Котлета
-    const pattyCard = ingredientsList.filter({
-      has: page.getByText(pattyName, { exact: true }),
-    });
-    await pattyCard.getByRole('link').click();
-    await expect(modal).toBeVisible();
-    await expect(modal.getByRole('heading', { name: pattyName, exact: true })).toBeVisible();
-    await expect(modal).not.toContainText(bunName);
-
-    await expect(modal).toContainText('4242');
-    await expect(modal).toContainText('420');
-    await expect(modal).toContainText('142');
-    await expect(modal).toContainText('242');
-
-    const overlay = page.locator('#modals [data-testid="modal-overlay"]');
-    await overlay.click({ position: { x: 5, y: 5 } });
-    await expect(modal).not.toBeVisible();
+    await expect(modal).not.toBeVisible({ timeout: 5000 });
   });
 });
