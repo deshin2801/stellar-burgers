@@ -16,7 +16,7 @@ test.describe('Модальные окна ингредиентов: откры�
     });
 
     await page.routeFromHAR(usersHarPath, {
-      url: 'https://norma.ffapi.ru/api/auth/user',
+      url:  '**/api/auth/user',
       notFound: 'abort',
     });
 

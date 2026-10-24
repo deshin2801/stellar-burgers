@@ -16,11 +16,10 @@ test.describe('Конструктор бургера: сборка и расчё
     });
 
     await page.routeFromHAR(usersHarPath, {
-      url: 'https://norma.ffapi.ru/api/auth/user',
+      url: '**/api/auth/user',
       notFound: 'abort',
     });
 
-    // Cookie для accessToken
     await page.context().addCookies([
       {
         name: 'accessToken',

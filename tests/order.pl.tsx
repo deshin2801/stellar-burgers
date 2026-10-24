@@ -7,8 +7,8 @@ const __dirname = dirname(__filename);
 
 test.describe('Поток заказа: сборка, оформление и очистка конструктора', () => {
   const ingredientsHarPath = join(__dirname, 'hars', 'ingridients.har');
-  const usersHarPath = join(__dirname, 'hars', 'users.har');
-  const orderHarPath = join(__dirname, 'hars', 'order.har');
+  const usersHarPath       = join(__dirname, 'hars', 'users.har');
+  const orderHarPath       = join(__dirname, 'hars', 'order.har');
 
   test.beforeEach(async ({ page }) => {
     await page.routeFromHAR(ingredientsHarPath, {
@@ -17,20 +17,21 @@ test.describe('Поток заказа: сборка, оформление и о
     });
 
     await page.routeFromHAR(usersHarPath, {
-      url: 'https://norma.ffapi.ru/api/auth/user',
+      url: '**/api/auth/user',
       notFound: 'abort',
     });
 
     await page.routeFromHAR(orderHarPath, {
-      url: 'https://norma.ffapi.ru/api/orders',
+      url: '**/api/orders',
       notFound: 'abort',
     });
 
+    const appPort = 4000;
     await page.context().addCookies([
       {
         name: 'accessToken',
         value: 'test-access-token',
-        url: 'http://localhost:4000',
+        url: `http://localhost:${appPort}`,
       },
     ]);
 
